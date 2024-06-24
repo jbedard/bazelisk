@@ -3,6 +3,7 @@ package repositories
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/bazelbuild/bazelisk/config"
 	"github.com/bazelbuild/bazelisk/httputil"
@@ -52,7 +53,16 @@ func (gh *GitHubRepo) getFilteredVersions(bazeliskHome, bazelFork string, wantPr
 		return json.Marshal(releases)
 	}
 
-	url := fmt.Sprintf("https://api.github.com/repos/%s/bazel/releases", bazelFork)
+	forkSegments := strings.Split(bazelFork, "/")
+	if len(forkSegments) > 2 {
+		return []string{}, fmt.Errorf("invalid bazel fork: %v", bazelFork)
+	} else if len(forkSegments) == 1 {
+		bazelFork = fmt.Sprintf("%s/bazel", bazelFork)
+	}
+
+	bazelFork = strings.Replace(bazelFork, "/", "-", -1)
+
+	url := fmt.Sprintf("https://api.github.com/repos/%s/releases", bazelFork)
 	auth := ""
 	if gh.token != "" {
 		auth = fmt.Sprintf("token %s", gh.token)
